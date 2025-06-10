@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCIIPong - Game in Progress</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 1px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .room-info {
+            font-size: 14px;
+        }
+
+        .game-stats {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 5px 15px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #00ff00;
+            color: #0a0a0a;
+        }
+
+        .game-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-field {
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.02);
+            position: relative;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .game-canvas {
+            display: block;
+            width: 800px;
+            height: 400px;
+            background: transparent;
+        }
+
+        .scoreboard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .center-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: repeating-linear-gradient(
+                to bottom,
+                #00ff00 0px,
+                #00ff00 10px,
+                transparent 10px,
+                transparent 20px
+            );
+            opacity: 0.3;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .game-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 1px solid #00ff00;
+            display: none;
+        }
+
+        .waiting-players {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid #00ff00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-over-content {
+            text-align: center;
+            background: rgba(0, 255, 0, 0.1);
+            padding: 40px;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+        }
+
+        .winner-text {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ffff00;
+            text-shadow: 0 0 15px #ffff00;
+        }
+
+        .prize-text {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #00ff00;
+        }
+
+        .claim-btn {
+            background: transparent;
+            border: 2px solid #ffff00;
+            color: #ffff00;
+            padding: 15px 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .claim-btn:hover {
+            background: #ffff00;
+            color: #0a0a0a;
+            box-shadow: 0 0 20px #ffff00;
+        }
+
+        @media (max-width: 768px) {
+            .game-canvas {
+                width: 100%;
+                max-width: 600px;
+                height: 300px;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Game Header -->
+    <div class="game-header">
+        <div class="room-info">
+            <strong>Room:</strong> <span id="roomName">Loading...</span> | 
+            <strong>Stake:</strong> <span id="roomStake">0</span> SOL |
+            <strong>Win Condition:</strong> <span id="winCondition">5</span> points
+        </div>
+        <div class="game-stats">
+            <div>Pool: <span id="totalPool">0</span> SOL</div>
+            <div>Players: <span id="playerCount">1/2</span></div>
+        </div>
+        <button class="back-btn" onclick="goBack()">← Back to Lobby</button>
+    </div>
+
+    <!-- Waiting for Players -->
+    <div class="waiting-players" id="waitingScreen">
+        <h2>🎮 Waiting for Opponent</h2>
+        <p style="margin: 20px 0;">
+            <span class="spinner"></span>
+            Looking for another player...
+        </p>
+        <p style="font-size: 12px; color: #666;">
+            Transaction confirmed. Stake deposited to escrow.<br>
+            Game will start when second player joins.
+        </p>
+        <div style="margin-top: 20px;">
+            <button class="back-btn" onclick="leaveRoom()">Leave Room</button>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <div class="game-field">
+            <canvas class="game-canvas" id="gameCanvas" width="800" height="400"></canvas>
+            <div class="center-line"></div>
+            <div class="scoreboard">
+                <span id="player1Score">0</span> : <span id="player2Score">0</span>
+            </div>
+            <div class="controls">
+                Player 1: W/S keys | Player 2: ↑/↓ keys | ESC: Pause
+            </div>
+            <div class="game-status" id="gameStatus">
+                <h3>PAUSED</h3>
+                <p>Press SPACE to continue</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div class="game-over" id="gameOverScreen">
+        <div class="game-over-content">
+            <div class="winner-text" id="winnerText">YOU WON!</div>
+            <div class="prize-text">
+                Prize Pool: <span id="finalPrize">0</span> SOL<br>
+                (After 5% fee: <span id="netPrize">0</span> SOL)
+            </div>
+            <button class="claim-btn" onclick="claimPrize()">Claim Prize 🏆</button>
+            <button class="claim-btn" onclick="goBack()" style="border-color: #00ff00; color: #00ff00;">Back to Lobby</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = 'waiting'; // waiting, playing, paused, finished
+        let roomData = {};
+        let gameLoop = null;
+        
+        // Game objects
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game settings
+        const PADDLE_HEIGHT = 80;
+        const PADDLE_WIDTH = 10;
+        const BALL_SIZE = 8;
+        const PADDLE_SPEED = 6;
+        const BALL_SPEED = 4;
+        
+        // Game entities
+        let paddle1 = { x: 20, y: canvas.height/2 - PADDLE_HEIGHT/2, dy: 0 };
+        let paddle2 = { x: canvas.width - 30, y: canvas.height/2 - PADDLE_HEIGHT/2, dy: 0 };
+        let ball = { 
+            x: canvas.width/2, 
+            y: canvas.height/2, 
+            dx: Math.random() > 0.5 ? BALL_SPEED : -BALL_SPEED,
+            dy: (Math.random() - 0.5) * BALL_SPEED 
+        };
+        
+        // Scores
+        let score1 = 0;
+        let score2 = 0;
+        
+        // Controls
+        const keys = {};
+        
+        // Initialize game
+        function init() {
+            // Get room data from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('room');
+            
+            // Load room data (placeholder)
+            loadRoomData(roomId);
+            
+            // Set up canvas
+            ctx.fillStyle = '#00ff00';
+            ctx.font = '16px Courier New';
+            
+            // Start game loop
+            gameLoop = setInterval(update, 1000/60); // 60 FPS
+            
+            // Simulate finding opponent after 3 seconds
+            setTimeout(() => {
+                startGame();
+            }, 3000);
+        }
+        
+        function loadRoomData(roomId) {
+            // Placeholder room data
+            roomData = {
+                id: roomId,
+                name: "Demo Room",
+                stake: 1.0,
+                winCondition: 5,
+                totalPool: 2.0
+            };
+            
+            document.getElementById('roomName').textContent = roomData.name;
+            document.getElementById('roomStake').textContent = roomData.stake;
+            document.getElementById('winCondition').textContent = roomData.winCondition;
+            document.getElementById('totalPool').textContent = roomData.totalPool;
+        }
+        
+        function startGame() {
+            document.getElementById('waitingScreen').style.display = 'none';
+            document.getElementById('playerCount').textContent = '2/2';
+            gameState = 'playing';
+            
+            // Show countdown
+            showCountdown();
+        }
+        
+        function showCountdown() {
+            let count = 3;
+            const countdownInterval = setInterval(() => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawField();
+                
+                ctx.fillStyle = '#ffff00';
+                ctx.font = '48px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(count > 0 ? count : 'GO!', canvas.width/2, canvas.height/2);
+                
+                count--;
+                if (count < 0) {
+                    clearInterval(countdownInterval);
+                    ctx.font = '16px Courier New';
+                    ctx.textAlign = 'left';
+                }
+            }, 1000);
+        }
+        
+        function update() {
+            if (gameState !== 'playing') return;
+            
+            // Handle input
+            handleInput();
+            
+            // Update paddle positions
+            updatePaddles();
+            
+            // Update ball
+            updateBall();
+            
+            // Check win condition
+            checkWinCondition();
+            
+            // Draw everything
+            draw();
+        }
+        
+        function handleInput() {
+            // Player 1 controls (W/S)
+            if (keys['KeyW']) paddle1.dy = -PADDLE_SPEED;
+            else if (keys['KeyS']) paddle1.dy = PADDLE_SPEED;
+            else paddle1.dy = 0;
+            
+            // Player 2 controls (Arrow keys) - simulated AI for demo
+            // In real game, this would be controlled by second player
+            const ballCenter = ball.y;
+            const paddle2Center = paddle2.y + PADDLE_HEIGHT/2;
+            
+            if (ballCenter < paddle2Center - 10) paddle2.dy = -PADDLE_SPEED * 0.8;
+            else if (ballCenter > paddle2Center + 10) paddle2.dy = PADDLE_SPEED * 0.8;
+            else paddle2.dy = 0;
+        }
+        
+        function updatePaddles() {
+            // Update paddle 1
+            paddle1.y += paddle1.dy;
+            if (paddle1.y < 0) paddle1.y = 0;
+            if (paddle1.y > canvas.height - PADDLE_HEIGHT) paddle1.y = canvas.height - PADDLE_HEIGHT;
+            
+            // Update paddle 2
+            paddle2.y += paddle2.dy;
+            if (paddle2.y < 0) paddle2.y = 0;
+            if (paddle2.y > canvas.height - PADDLE_HEIGHT) paddle2.y = canvas.height - PADDLE_HEIGHT;
+        }
+        
+        function updateBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Top/bottom collision
+            if (ball.y <= 0 || ball.y >= canvas.height - BALL_SIZE) {
+                ball.dy = -ball.dy;
+                ball.y = Math.max(0, Math.min(canvas.height - BALL_SIZE, ball.y));
+            }
+            
+            // Check for scoring BEFORE paddle collision
+            if (ball.x < -BALL_SIZE) {
+                score2++;
+                resetBall();
+                updateScoreDisplay();
+                return;
+            } else if (ball.x > canvas.width) {
+                score1++;
+                resetBall();
+                updateScoreDisplay();
+                return;
+            }
+            
+            // Paddle 1 collision (left)
+            if (ball.dx < 0 && // Only when moving left
+                ball.x <= paddle1.x + PADDLE_WIDTH && 
+                ball.x + BALL_SIZE >= paddle1.x &&
+                ball.y + BALL_SIZE >= paddle1.y && 
+                ball.y <= paddle1.y + PADDLE_HEIGHT) {
+                ball.dx = Math.abs(ball.dx); // Force positive direction
+                ball.x = paddle1.x + PADDLE_WIDTH; // Position ball outside paddle
+                ball.dy += (Math.random() - 0.5) * 2; // Add some randomness
+            }
+            
+            // Paddle 2 collision (right)  
+            if (ball.dx > 0 && // Only when moving right
+                ball.x + BALL_SIZE >= paddle2.x && 
+                ball.x <= paddle2.x + PADDLE_WIDTH &&
+                ball.y + BALL_SIZE >= paddle2.y && 
+                ball.y <= paddle2.y + PADDLE_HEIGHT) {
+                ball.dx = -Math.abs(ball.dx); // Force negative direction
+                ball.x = paddle2.x - BALL_SIZE; // Position ball outside paddle
+                ball.dy += (Math.random() - 0.5) * 2; // Add some randomness
+            }
+        }
+        
+        function resetBall() {
+            ball.x = canvas.width/2;
+            ball.y = canvas.height/2;
+            ball.dx = Math.random() > 0.5 ? BALL_SPEED : -BALL_SPEED;
+            ball.dy = (Math.random() - 0.5) * BALL_SPEED;
+        }
+        
+        function updateScoreDisplay() {
+            document.getElementById('player1Score').textContent = score1;
+            document.getElementById('player2Score').textContent = score2;
+        }
+        
+        function checkWinCondition() {
+            if (score1 >= roomData.winCondition || score2 >= roomData.winCondition) {
+                gameState = 'finished';
+                showGameOver(score1 > score2);
+            }
+        }
+        
+        function showGameOver(playerWon) {
+            clearInterval(gameLoop);
+            
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            const winnerText = document.getElementById('winnerText');
+            const finalPrize = document.getElementById('finalPrize');
+            const netPrize = document.getElementById('netPrize');
+            
+            if (playerWon) {
+                winnerText.textContent = '🎉 YOU WON! 🎉';
+                winnerText.style.color = '#ffff00';
+            } else {
+                winnerText.textContent = '😞 YOU LOST 😞';
+                winnerText.style.color = '#ff6666';
+            }
+            
+            finalPrize.textContent = roomData.totalPool;
+            netPrize.textContent = (roomData.totalPool * 0.95).toFixed(2);
+            
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawField();
+        }
+        
+        function drawField() {
+            ctx.fillStyle = '#00ff00';
+            
+            // Draw paddles
+            ctx.fillRect(paddle1.x, paddle1.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+            ctx.fillRect(paddle2.x, paddle2.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+            
+            // Draw ball
+            ctx.fillRect(ball.x, ball.y, BALL_SIZE, BALL_SIZE);
+        }
+        
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            
+            if (e.code === 'Escape') {
+                togglePause();
+            }
+            if (e.code === 'Space' && gameState === 'paused') {
+                togglePause();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        function togglePause() {
+            if (gameState === 'playing') {
+                gameState = 'paused';
+                document.getElementById('gameStatus').style.display = 'block';
+            } else if (gameState === 'paused') {
+                gameState = 'playing';
+                document.getElementById('gameStatus').style.display = 'none';
+            }
+        }
+        
+        function claimPrize() {
+            // Simulate Solana transaction
+            alert('Prize claimed! SOL transferred to your wallet.');
+            goBack();
+        }
+        
+        function leaveRoom() {
+            if (confirm('Are you sure you want to leave? Your stake will be lost.')) {
+                goBack();
+            }
+        }
+        
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
