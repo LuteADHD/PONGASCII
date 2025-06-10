@@ -405,10 +405,10 @@
         </div>
     </div>
 
+    <!-- Skrypty -->
+    <script src="js/wallet.js"></script>
     <script>
-        // Basic functionality
-        let walletConnected = false;
-        let walletAddress = '';
+        // Basic functionality - teraz używa prawdziwego systemu portfela
         let rooms = [];
 
         // DOM Elements
@@ -420,42 +420,18 @@
         const roomsList = document.getElementById('roomsList');
         const roomsLoading = document.getElementById('roomsLoading');
 
-        // Wallet Connection (Placeholder)
+        // Wallet Connection - teraz używa prawdziwego Phantom Wallet
         connectWalletBtn.addEventListener('click', async () => {
-            // This will be replaced with actual Phantom wallet integration
-            if (!walletConnected) {
-                // Simulate wallet connection
-                walletConnected = true;
-                walletAddress = 'A1B2C3...XYZ789'; // Placeholder
-                
-                connectWalletBtn.textContent = 'Disconnect Wallet';
-                walletInfo.style.display = 'block';
-                walletAddressSpan.textContent = walletAddress;
-                walletBalanceSpan.textContent = '5.25'; // Placeholder balance
-                
-                createRoomBtn.disabled = false;
-                createRoomBtn.textContent = 'Create Room';
-                
-                document.getElementById('chatInput').disabled = false;
-                document.getElementById('chatSend').disabled = false;
-                
-                addChatMessage('System', 'Wallet connected successfully!', '#00ff00');
+            if (!walletFunctions.isConnected) {
+                // Połącz z Phantom Wallet
+                await walletFunctions.connectWallet();
             } else {
-                // Disconnect
-                walletConnected = false;
-                connectWalletBtn.textContent = 'Connect Phantom Wallet';
-                walletInfo.style.display = 'none';
-                createRoomBtn.disabled = true;
-                createRoomBtn.textContent = 'Create Room (Wallet Required)';
-                
-                document.getElementById('chatInput').disabled = true;
-                document.getElementById('chatSend').disabled = true;
-                
-                addChatMessage('System', 'Wallet disconnected.', '#ff6666');
+                // Rozłącz portfel
+                await walletFunctions.disconnectWallet();
             }
         });
 
-        // Create Room
+        // Create Room - teraz sprawdza prawdziwy balans
         createRoomBtn.addEventListener('click', () => {
             const roomName = document.getElementById('roomName').value.trim();
             const stakeAmount = parseFloat(document.getElementById('stakeAmount').value);
@@ -471,13 +447,18 @@
                 return;
             }
 
-            // Create room (placeholder)
+            // Sprawdź czy ma wystarczająco SOL
+            if (!walletFunctions.checkSufficientBalance(stakeAmount)) {
+                return;
+            }
+
+            // Create room (placeholder - wkrótce dodamy prawdziwe transakcje)
             const newRoom = {
                 id: Date.now(),
                 name: roomName,
                 stake: stakeAmount,
                 winCondition: winCondition,
-                creator: walletAddress,
+                creator: walletFunctions.address,
                 status: 'waiting'
             };
 
@@ -510,8 +491,8 @@
                         Win Condition: ${room.winCondition} points | Status: ${room.status}
                         <br>Creator: ${room.creator.substring(0, 8)}...
                     </div>
-                    <button class="join-btn" onclick="joinRoom(${room.id})" ${!walletConnected || room.creator === walletAddress ? 'disabled' : ''}>
-                        ${room.creator === walletAddress ? 'Your Room' : 'Join Room'}
+                    <button class="join-btn" onclick="joinRoom(${room.id})" ${!walletFunctions.isConnected || room.creator === walletFunctions.address ? 'disabled' : ''}>
+                        ${room.creator === walletFunctions.address ? 'Your Room' : 'Join Room'}
                     </button>
                 </div>
             `).join('');
@@ -551,26 +532,30 @@
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
             
-            if (message && walletConnected) {
-                addChatMessage(walletAddress.substring(0, 8), message);
+            if (message && walletFunctions.isConnected) {
+                const shortAddress = walletFunctions.address.substring(0, 8);
+                addChatMessage(shortAddress, message);
                 input.value = '';
             }
         }
 
-        // Initialize
-        renderRooms();
-        
-        // Add some demo rooms
-        setTimeout(() => {
-            if (rooms.length === 0) {
-                rooms.push(
-                    { id: 1, name: "Beginner's Room", stake: 0.5, winCondition: 5, creator: "Demo1...xyz", status: "waiting" },
-                    { id: 2, name: "High Stakes", stake: 5.0, winCondition: 7, creator: "Demo2...abc", status: "waiting" },
-                    { id: 3, name: "Quick Match", stake: 1.0, winCondition: 3, creator: "Demo3...def", status: "waiting" }
-                );
-                renderRooms();
-            }
-        }, 2000);
+        // Initialize - uruchom system portfela
+        window.addEventListener('load', () => {
+            walletFunctions.initWallet();
+            renderRooms();
+            
+            // Add some demo rooms
+            setTimeout(() => {
+                if (rooms.length === 0) {
+                    rooms.push(
+                        { id: 1, name: "Beginner's Room", stake: 0.5, winCondition: 5, creator: "Demo1...xyz", status: "waiting" },
+                        { id: 2, name: "High Stakes", stake: 5.0, winCondition: 7, creator: "Demo2...abc", status: "waiting" },
+                        { id: 3, name: "Quick Match", stake: 1.0, winCondition: 3, creator: "Demo3...def", status: "waiting" }
+                    );
+                    renderRooms();
+                }
+            }, 2000);
+        });
     </script>
 </body>
 </html>
